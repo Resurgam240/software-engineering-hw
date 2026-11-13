@@ -1,0 +1,13 @@
+{
+  "plantuml": {
+    "version": "1.2026.9",
+    "url": "https://github.com/plantuml/plantuml/releases/download/v1.2026.9/plantuml-1.2026.9.jar",
+    "sha256": "aa4a1d06f8911c4b842beff4828dd955be431692b631a312d04c0e9fab9581de"
+  },
+  "drawio": {
+    "version": "32.6.10",
+    "url": "https://github.com/jgraph/drawio-desktop/releases/download/v32.6.10/draw.io-32.6.10-windows-no-installer.zip",
+    "archive_sha256": "ca01af1ebcb8a9cc7383c1c5d6f11ea90ee030e563063b611978584ff70fb4d6",
+    "exe_sha256": "645fe83877e45edc5f69d3f4f224e27a0c181a0101b47458f01e0f3e892df4f8"
+  }
+}

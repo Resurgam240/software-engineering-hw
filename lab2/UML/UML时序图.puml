@@ -1,0 +1,61 @@
+@startuml
+!pragma layout smetana
+skinparam defaultFontName Microsoft YaHei
+skinparam defaultFontSize 16
+skinparam shadowing false
+skinparam backgroundColor #FFFFFF
+skinparam ArrowColor #245B9E
+skinparam classBorderColor #245B9E
+skinparam classBackgroundColor #F0F5FC
+skinparam noteBackgroundColor #F5F7FA
+skinparam noteBorderColor #B8C7DA
+skinparam roundcorner 10
+skinparam dpi 180
+
+actor "买家" as U
+boundary "商品详情页" as UI
+control "认证/API" as API
+control "预约服务" as S
+database "PostgreSQL" as DB
+U -> UI : 填写1～200字留言并预约
+UI -> API : POST /reservations\n操作标识K、商品ID、所见内容及行版本
+API -> API : 从会话取身份，校验普通账号
+API -> S : create(actor, K, request)
+S -> DB : BEGIN；锁商品，校验对象访问权限
+S -> DB : 查询(actor,K)回执
+alt 同K不同请求摘要
+  S -> DB : ROLLBACK
+  S --> UI : 409 操作标识已用于其他内容
+else 已有同K回执
+  S -> DB : 读取当前可访问预约；结束事务
+  S --> UI : 返回原结果或当前记录，不重新占用
+else 首次操作
+  S -> DB : 查同买家同商品有效预约
+  alt 同买家已有有效预约
+    S -> DB : 保存K到已有预约的回执并提交
+    S --> UI : 返回已有预约（可跨设备）
+  else 无本人有效预约
+    S -> DB : 检查非本人、在售、版本、合法留言
+    alt 被占用 / 内容或状态过期 / 输入非法
+      S -> DB : 回滚；可用时独立写失败日志
+      S --> UI : 409或422，明确原因并提示刷新
+    else 合法
+      S -> DB : 插入待确认预约、不可变快照及原始留言
+      S -> DB : 商品转已预约、rowVersion+1
+      S -> DB : 成功日志 + 幂等回执
+      alt 任一保存失败
+        S -> DB : ROLLBACK（全部不生效）
+        S --> UI : 失败，保留输入
+      else 保存成功
+        S -> DB : COMMIT
+        S --> UI : 201 / 预约记录（响应可能丢失）
+      end
+    end
+  end
+end
+note over S,DB
+  商品锁串行化多人竞争；有效预约另有部分唯一索引兜底。
+  相同K重试到达时先认证/授权，再查回执，不再次执行状态变化。
+end note
+
+@enduml

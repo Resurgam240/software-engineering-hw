@@ -1,0 +1,8 @@
+# Official third-party runtimes are available locally; Git stores setup instructions.
+/tools/plantuml.jar
+/tools/drawio/
+/tools/downloads/
+/tools/.install-*/
+__pycache__/
+*.pyc
+/build/

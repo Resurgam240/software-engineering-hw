@@ -1,0 +1,59 @@
+@startuml
+!pragma layout smetana
+skinparam defaultFontName Microsoft YaHei
+skinparam defaultFontSize 16
+skinparam shadowing false
+skinparam backgroundColor #FFFFFF
+skinparam ArrowColor #245B9E
+skinparam classBorderColor #245B9E
+skinparam classBackgroundColor #F0F5FC
+skinparam noteBackgroundColor #F5F7FA
+skinparam noteBorderColor #B8C7DA
+skinparam roundcorner 10
+skinparam dpi 180
+
+top to bottom direction
+package "桌面 Web 前端" {
+  [普通用户界面\n登录/商品/预约/本人统计] as UI
+  [管理员界面\n审核/违规/统计/审计] as AUI
+}
+package "单体应用服务（模块化分层）" {
+  [HTTP API + DTO白名单\n统一异常映射] as API
+  [M1 认证与权限\n会话/角色/对象归属] as Auth
+  [M2 商品管理\n草稿/内容版本/图片] as Goods
+  [M3 审核与违规治理\n审核批次/违规记录] as Gov
+  [M4 授权范围查询\n商品筛选/排序/分页] as Search
+  [M5 预约与成交\n预约/确认/拒绝/取消/完成] as Trade
+  [M6 成交统计\n已完成预约快照聚合] as Stat
+  [M7 历史与审计\n业务历史/日志/隐私访问] as Audit
+  [事务与幂等协调\n固定锁顺序/版本/回执] as TX
+  [Repository 数据访问] as Repo
+}
+database "PostgreSQL\n业务数据/快照/回执/日志" as DB
+folder "不可变图片资产目录\nUUID文件名/只读历史引用" as Images
+UI --> API : HTTPS/JSON + session
+AUI --> API
+API --> Auth : 所有受保护请求
+API --> Goods
+API --> Gov
+API --> Search
+API --> Trade
+API --> Stat
+API --> Audit
+Goods --> TX
+Gov --> TX : 违规联动取消
+Trade --> TX : 商品+预约同步
+TX --> Audit : 同事务成功日志
+TX --> Repo
+Search --> Repo : 角色/归属过滤
+Stat --> Repo : 只读聚合
+Audit --> Repo
+Repo --> DB
+Goods --> Images : 校验后保存/版本引用
+note bottom of TX
+  先锁商品，再锁预约，最后追加日志与回执。
+  业务模块不各自提交；任一步失败整笔回滚。
+  采用单体+单库，避免课程规模下引入跨服务事务。
+end note
+
+@enduml

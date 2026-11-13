@@ -1,0 +1,92 @@
+@startuml
+!pragma layout smetana
+skinparam defaultFontName Microsoft YaHei
+skinparam defaultFontSize 16
+skinparam shadowing false
+skinparam backgroundColor #FFFFFF
+skinparam ArrowColor #245B9E
+skinparam classBorderColor #245B9E
+skinparam classBackgroundColor #F0F5FC
+skinparam noteBackgroundColor #F5F7FA
+skinparam noteBorderColor #B8C7DA
+skinparam roundcorner 10
+skinparam dpi 180
+
+top to bottom direction
+class "User 用户" as User {
+  +id: UUID
+  +usernameNormalized: String {unique}
+  -passwordHash: String
+  +role: USER | ADMIN
+}
+class "Product 商品" as Product {
+  +id: UUID
+  +sellerId: UUID
+  +status: ProductStatus
+  +contentVersion: int
+  +rowVersion: int
+  +publishedAt: Instant?
+  +activeReservationId: UUID?
+  +saveDraft(expectedVersion)
+  +submit(expectedVersion)
+}
+class "ProductVersion 内容版本" as PV {
+  +productId: UUID
+  +version: int
+  +title: String
+  +category, condition: String
+  +price: Decimal(7,2)
+  +description: String?
+  +imageRefs: List<UUID> [0..3]
+}
+class "ReviewBatch 审核批次" as Review {
+  +id: UUID
+  +productId, contentVersion
+  +status: PENDING | WITHDRAWN | APPROVED | REJECTED
+  +adminId: UUID?
+  +reason: String?
+  +decide(expectedBatch, expectedVersion)
+}
+class "Reservation 预约" as R {
+  +id: UUID
+  +buyerId, sellerId, productId
+  +status: ReservationStatus
+  +rowVersion: int
+  +originalMessage: String {immutable}
+  +cancelActorId, reason, completedAt
+  +confirm() / reject(reason)
+  +cancel(reason) / complete()
+}
+class "ReservationSnapshot 预约快照" as S {
+  +title, category, condition
+  +price: Decimal(7,2)
+  +description, imageRefs
+  +contentVersion: int
+  {immutable}
+}
+class "ImageAsset 图片资产" as I {
+  +id: UUID
+  +storageKey: String {immutable}
+  +mimeType, byteSize
+}
+User "1 seller" -- "0..*" Product
+User "1 buyer" -- "0..*" R
+Product "1" *-- "1..*" PV
+Product "1" -- "0..*" Review
+Review "0..*" --> "1" PV : 本批内容
+User "0..1 admin" -- "0..*" Review
+Product "1" -- "0..*" R : 历史预约
+R "1" *-- "1" S
+PV "0..*" --> "0..3" I : 引用
+S "0..*" --> "0..3" I : 保留引用
+note bottom of Product
+  买家、卖家是普通账号的业务身份，不建两个账号子类。
+  rowVersion防止旧状态写入；contentVersion标识公开内容。
+  有效预约仅指待确认或已确认；数据库保证同商品至多1条。
+end note
+note bottom of S
+  快照包含全部公开内容；旧图像不可被覆盖或删除。
+  快照金额用于统计；不等于真实成交价。
+end note
+
+@enduml

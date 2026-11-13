@@ -1,0 +1,56 @@
+@startuml
+!pragma layout smetana
+skinparam defaultFontName Microsoft YaHei
+skinparam defaultFontSize 16
+skinparam shadowing false
+skinparam backgroundColor #FFFFFF
+skinparam ArrowColor #245B9E
+skinparam classBorderColor #245B9E
+skinparam classBackgroundColor #F0F5FC
+skinparam noteBackgroundColor #F5F7FA
+skinparam noteBorderColor #B8C7DA
+skinparam roundcorner 10
+skinparam dpi 180
+
+left to right direction
+actor "游客" as Guest
+actor "普通用户" as User
+actor "买家\n业务身份" as Buyer
+actor "卖家\n业务身份" as Seller
+actor "管理员\n独立账号" as Admin
+User <|-- Buyer
+User <|-- Seller
+rectangle "校园二手交易系统" {
+  usecase "注册 / 登录" as Login
+  usecase "公开在售商品查询\n及公开详情" as Browse
+  usecase "草稿 / 提交 / 撤回\n编辑重审 / 下架 / 条件删除" as Goods
+  usecase "预约 / 查看本人预约\n取消本人有效预约" as Reserve
+  usecase "确认 / 拒绝预约\n取消已确认 / 标记完成" as Process
+  usecase "查看本人业务历史" as History
+  usecase "本人 / 平台成交统计" as Stats
+  usecase "审核通过或驳回\n违规下架 / 成交后备注" as Govern
+  usecase "非草稿查询 / 审计日志" as Audit
+  usecase "有事由查看私人留言" as Private
+  usecase "保存访问原因及留痕" as Reason
+}
+Guest --> Login
+Guest --> Browse
+User --> Login
+User --> Browse
+User --> History
+Buyer --> Reserve
+Seller --> Goods
+Seller --> Process
+Seller --> Stats
+Admin --> Login
+Admin --> Govern
+Admin --> Audit
+Admin --> Stats
+Admin --> Private
+Private ..> Reason : <<include>>
+note bottom of Admin
+  管理员不能参与买卖，不能代完成或任意改状态。
+  普通用户可同时承担买家和卖家业务身份。
+end note
+
+@enduml
