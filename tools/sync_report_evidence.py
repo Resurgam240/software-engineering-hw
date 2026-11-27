@@ -29,9 +29,9 @@ def main():
     line_text = (
         f"本轮统计生产 Python 物理行数为 {size['physical']} 行，排除空行、注释和文档字符串后，"
         f"有效行数为 \\textbf{{{size['effective']} 行}}，超过任务书要求的 1500 行。"
-        "统计范围只含 \\texttt{src/campus\\_market} 中的 Python 文件，不含测试、迁移、工具、"
+        "统计范围只含 \\path{src/campus_market} 中的 Python 文件，不含测试、迁移、工具、"
         "HTML/CSS/JavaScript、第三方库或自动生成代码。逐文件记录保存在 "
-        "\\texttt{artifacts/line-count.json}，可用 \\texttt{tools/line\\_count.py} 复现。\n"
+        "\\path{artifacts/line-count.json}，可用 \\path{tools/line_count.py} 复现。\n"
     )
     (evidence / "line_count.tex").write_text(line_text, encoding="utf-8")
     tree = ET.parse(ROOT / "artifacts/pytest.xml")
