@@ -27,7 +27,7 @@ def trade_action(page, label):
 
 def screenshot(page, name):
     page.evaluate("window.scrollTo(0, 0)")
-    page.screenshot(path=str(OUT / name), full_page=True)
+    page.screenshot(path=str(OUT / name), full_page=False)
 
 
 def run_browser(playwright, name, executable):
