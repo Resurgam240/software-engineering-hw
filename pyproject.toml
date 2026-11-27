@@ -1,0 +1,46 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "campus-market"
+version = "1.0.0"
+description = "Software engineering lab: campus second-hand marketplace"
+requires-python = ">=3.13,<3.14"
+dependencies = [
+  "fastapi>=0.115,<1", "uvicorn>=0.34,<1", "jinja2>=3.1,<4",
+  "sqlalchemy>=2.0,<2.1", "psycopg[binary]>=3.2,<4", "alembic>=1.14,<2",
+  "argon2-cffi>=23,<26", "python-multipart>=0.0.20,<1", "pillow>=11,<13",
+  "python-dotenv>=1,<2"
+]
+
+[project.scripts]
+campus-market = "campus_market.cli:main"
+
+[dependency-groups]
+dev = ["pytest>=8,<10", "httpx>=0.28,<1", "pylint>=3.3,<5", "build>=1.2,<2", "playwright>=1.50,<2"]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/campus_market"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"
+
+[tool.pylint.main]
+py-version = "3.13"
+
+[tool.pylint.format]
+max-line-length = 110
+
+[tool.pylint.design]
+max-args = 9
+max-positional-arguments = 9
+max-attributes = 18
+max-locals = 22
+min-public-methods = 0
+
+[tool.pylint.messages_control]
+# SQLAlchemy mapped models and Pydantic schemas deliberately have few methods.
+# The service facade groups domain commands rather than splitting their transaction boundary.
+disable = ["too-few-public-methods", "too-many-public-methods"]
