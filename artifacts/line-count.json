@@ -69,8 +69,8 @@
     },
     {
       "file": "src/campus_market/queries.py",
-      "physical": 264,
-      "effective": 232
+      "physical": 266,
+      "effective": 234
     },
     {
       "file": "src/campus_market/repository.py",
@@ -103,7 +103,7 @@
       "effective": 217
     }
   ],
-  "physical": 2072,
-  "effective": 1610,
+  "physical": 2074,
+  "effective": 1612,
   "over_1500": true
 }

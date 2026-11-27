@@ -226,7 +226,9 @@ class QueryService:
         page, offset = pagination(query)
         statement = select(PrivateAccessLog)
         if query.get("reservation_id"):
-            statement = statement.where(PrivateAccessLog.reservation_id == identifier(query["reservation_id"]))
+            statement = statement.where(
+                PrivateAccessLog.reservation_id == identifier(query["reservation_id"])
+            )
         if query.get("admin_id"):
             statement = statement.where(PrivateAccessLog.admin_id == identifier(query["admin_id"]))
         lower, upper = date_bounds(query)
