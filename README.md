@@ -1,137 +1,144 @@
-# 拾光集市：校园二手交易系统
+# 拾光集市
 
-软件工程实验三。Python 3.13 + FastAPI + PostgreSQL 17；桌面浏览器界面。
+面向校园闲置物品的二手交易系统，支持商品发布、审核、查询、预约和线下交易进度管理。普通用户可以同时作为买家和卖家，管理员负责商品审核与违规处理。
 
-## 本机快速启动
+采用 Python 3.13、FastAPI 和 PostgreSQL 17，提供桌面浏览器界面。
 
-在本目录打开 PowerShell：
+## 功能
+
+- **商品管理**：保存草稿、上传图片、提交审核、编辑重审、撤回与下架。
+- **浏览与搜索**：按关键词、分类和价格筛选，支持价格排序和分页。
+- **预约与交易**：买家提交预约，卖家确认或拒绝；支持取消及卖家标记完成。
+- **审核与治理**：按审核批次处理商品，违规下架时同步终止有效预约。
+- **统计与历史**：查询已完成交易的数量、预约时标价合计及历史商品快照。
+- **权限与审计**：校验角色和对象归属，记录关键操作；管理员查看私人留言时保存访问记录。
+
+系统记录线下交易进度，完成状态由卖家标记，统计金额取预约时标价；付款和交付由交易双方协商。
+
+## 环境要求
+
+- Python 3.13
+- [uv](https://docs.astral.sh/uv/)
+- PostgreSQL 17，已启动并可连接
+- Chrome 或 Edge 桌面浏览器
+
+以下命令均在项目根目录执行。
+
+## 安装与初始化
 
 ```powershell
-uv sync --frozen  # 按锁文件安装项目依赖
-uv run campus-market db-start  # 启动本项目的本地 PostgreSQL
-uv run campus-market init  # 执行数据库迁移，保留既有数据
-uv run campus-market serve  # 启动本地 Web 服务，默认端口 8000
+uv sync --frozen  # 按 uv.lock 安装项目与开发依赖
+uv run python tools/configure_database.py  # 交互式创建数据库、应用账号和 .env
+uv run campus-market init  # 执行 Alembic 数据库迁移
+uv run campus-market admin  # 创建管理员账号，密码不回显
 ```
 
-访问 <http://127.0.0.1:8000>。服务停止用运行终端中的 Ctrl+C；不再使用数据库时执行 `uv run campus-market db-stop`。
-数据库按需运行，未注册开机自启服务，未修改原有 MySQL。停止数据库前先停止应用和测试。
+数据库配置脚本需要 PostgreSQL 管理员凭据，默认连接 `127.0.0.1:5432`，创建 `campus_market` 和 `campus_market_test` 两个数据库。它会拒绝覆盖已有 `.env`、同名数据库或应用账号。
 
-本机 PostgreSQL 二进制位于 `D:\PostgreSQL\17`，数据位于 `D:\PostgreSQL\data\campus-market`。
-数据库限制回环地址访问，shared_buffers=64MB、work_mem=2MB、max_connections=50。
-Python 虚拟环境位于本目录 `.venv`，可以删除后按锁文件重建。
+已有数据库环境可参考 [.env.example](.env.example) 手动配置 `.env`，再执行迁移。
 
-## 演示账号
+### 配置项
 
-仅用于本机课程演示，共同密码为 `CampusDemo2026!`：
+| 变量 | 用途 | 默认值或要求 |
+|---|---|---|
+| `DATABASE_URL` | 应用数据库连接 | `postgresql+psycopg://` 连接串 |
+| `TEST_DATABASE_URL` | 独立测试数据库连接 | 数据库名须为 `campus_market_test` |
+| `APP_SECRET` | 业务请求摘要密钥 | 至少 32 个随机字符 |
+| `ASSET_DIR` | 上传图片目录 | `var/images` |
+| `COOKIE_SECURE` | 仅通过 HTTPS 发送 Cookie | 本地 HTTP 使用 `false`，HTTPS 使用 `true` |
 
-| 用户名      | 角色                       |
-| ----------- | -------------------------- |
-| admin_demo  | 管理员                     |
-| seller_demo | 普通用户，含商品和卖家记录 |
-| buyer_demo  | 普通用户，含预约记录       |
-| buyer_two   | 普通用户，用于预约另一商品 |
+凭据保存在 `.env`，数据库和图片目录需要具备写入权限。
 
-`uv run campus-market seed` 初始化演示账号和商品；重复执行不重建既有商品，也不覆盖既有账号密码。
-这是明确的虚构演示数据。不要把演示配置用于公网部署。创建个人管理员可执行 `uv run campus-market admin`，控制台隐藏密码输入。
+## 启动与停止
 
-## 在新电脑配置
+```powershell
+uv run campus-market serve  # 启动 http://127.0.0.1:8000
+```
 
-1. 准备 Python 3.13、uv、PostgreSQL 17。使用 PostgreSQL 官方下载页提供的 Windows binaries；本机使用 EDB 发布的 17.7 版本，解压后保留 bin/lib/share。
-2. 用 `initdb` 初始化独立数据目录，认证方式选择 SCRAM，监听 `127.0.0.1`，用 `pg_ctl` 手动启动；已有数据库端口冲突时选另一个端口，并同步连接配置。
-3. `uv sync --frozen` 安装锁定依赖；运行 `uv run python tools/configure_database.py`，输入数据库管理员凭据，创建应用用户及独立开发/测试数据库并写入 `.env`。
-4. `uv run campus-market init`、`uv run campus-market admin`，按需执行 `uv run campus-market seed`，最后 `uv run campus-market serve`。
+打开 [商品集市](http://127.0.0.1:8000/market)。使用 `--port` 参数指定端口；在运行终端按 `Ctrl+C` 停止应用。
 
-`.env.example` 只有占位符，`.env`、`var/` 和数据库目录不加入 Git、不进入交付包。本机数据库初始化管理员密码保存在被忽略的 `var/postgres-admin.local`，仅供本机维护，不是应用账号密码。
-当前无需再次运行配置脚本；它会拒绝覆盖已有 `.env` 或既有角色。
+```powershell
+uv run campus-market serve --port 8080  # 在 8080 端口启动应用
+```
 
-## 架构和设计对应
+Windows 下，`db-start` 和 `db-stop` 可管理固定目录中的 PostgreSQL：程序位于 `D:\PostgreSQL\17`，数据位于 `D:\PostgreSQL\data\campus-market`。使用其他安装位置时，通过 PostgreSQL 自身的服务或 `pg_ctl` 管理数据库。
 
-- `models.py` 实现类图实体、外键、部分唯一索引；`schemas.py` 定义拒绝额外字段的 HTTP 输入。
-- `product_commands.py`、`governance.py`、`trade_commands.py` 实现商品、审核和预约状态机。
-- `commands.py` 统一控制事务、幂等回执和成功日志；业务处理函数不能自行提交。
-- `queries.py`、`repository.py` 实现角色范围、业务历史、快照读取及统计。
-- `auth.py`、`assets.py` 实现认证、访问控制及不可变图片；`web.py` 是会话与 CSRF 边界。
-- `integrity.py` 提供只读数据诊断，执行 `uv run campus-market verify`；不提供管理员手工改状态或自动修复接口。
+```powershell
+uv run campus-market db-start  # 启动上述目录中的 PostgreSQL 实例
+uv run campus-market db-stop  # 停止该实例；执行前先停止应用和测试
+```
 
-API 文档在运行服务的 `/docs`。写接口需先访问一个页面取得 CSRF Cookie，再发送同值的 `X-CSRF-Token`。
-登录后 CSRF 会轮换。业务写操作另需 UUID 格式的 `Idempotency-Key` 和界面所见版本。
-请求失败且结果未知时，保留原请求内容和操作标识重试；明确开始下一次业务尝试时使用新标识。
+## 演示数据
 
-相对实验二的实现细化：
+```powershell
+uv run campus-market seed  # 创建演示账号和商品，重复执行不覆盖既有账号及商品
+```
 
-1. 仍使用单体、单 PostgreSQL、不可变图片；浏览器使用原生 JS 调用接口，Jinja2 渲染共享页面壳。
-2. `activeReservationId` 不重复存为商品列，而由有效预约唯一索引查询派生，避免双向指针失配；接口仍返回该字段。
-3. 在固定“商品→预约”行锁顺序之前，增加“操作者+操作标识”的事务级 advisory lock，处理同标识跨对象并发复用。
-4. 本机 HTTP 的 Cookie Secure=false；HTTPS 部署设置 COOKIE_SECURE=true。会话不自动超时，退出时服务器撤销会话。
-5. 分类和成色采用实验二界面的固定选项；时间持久化使用 UTC，日期筛选按北京时间的完整自然日解释。
+初始化后可使用以下账号，共同密码为 `CampusDemo2026!`：
 
-## 质量与复现命令
+| 用户名 | 角色与数据 |
+|---|---|
+| `admin_demo` | 管理员，审核与治理入口 |
+| `seller_demo` | 普通用户，商品与卖家记录 |
+| `buyer_demo` | 普通用户，预约记录 |
+| `buyer_two` | 普通用户，可用于新增预约 |
+
+演示数据覆盖草稿、待审核、在售、已预约和已成交等状态，便于体验不同流程。实际部署应创建独立账号和凭据。
+
+## 测试与构建
 
 ```powershell
 uv run pylint src/campus_market  # 检查生产 Python 代码风格
-uv run pytest --junitxml=artifacts/pytest.xml  # 执行测试并保存报告（重建测试库）
+uv run pytest --junitxml=artifacts/pytest.xml  # 执行集成测试并输出 JUnit 报告
+uv run python tools/acceptance.py  # 验证服务重启、并发查询和预约性能
+uv run python tools/browser_smoke.py  # 在 Chrome 和 Edge 中执行完整业务流程
+uv run campus-market verify  # 只读检查状态关联、历史快照和图片文件
 uv run python tools/line_count.py  # 统计有效生产 Python 代码行数
-uv run python tools/acceptance.py  # 验证重启与性能（重建测试库）
-uv run python tools/browser_smoke.py  # 使用 Chrome 和 Edge 验证完整业务流程
-uv build  # 构建 wheel 和源码发行包
-uv run python tools/verify_wheel.py  # 在独立环境安装 wheel 并验证启动
-uv run campus-market verify  # 只读检查业务数据关联与图片完整性
+uv build  # 构建 wheel 和源码发行包到 dist/
+uv run python tools/verify_wheel.py  # 独立安装 wheel，验证服务及静态资源
 ```
 
-- **pytest 和 acceptance 会重建 `campus_market_test` 的 public schema。**数据库名带精确保护，不得配置成开发库；两项测试应依次运行，不要并行重建同一测试库。
-- acceptance 使用独立服务端口 8001，真实 HTTP 请求执行 5批×20并发；验证 10 次正常进程重启，并保存全部200个性能样本，包含失败/超时。
-- 浏览器脚本需主应用在 8000 运行，使用已安装 Chrome/Edge，真实创建验收账号、商品和预约；不清理这些历史。测试账号名称和商品标题明确带有验收用途。
-- 并发测试覆盖五类竞争各10轮，其中多人竞争每轮20个不同买家；故障注入仅为测试配置中的内部服务参数，无公开 HTTP 开关。
-- `line_count.py` 只统计 `src/campus_market` Python token 所在物理行，排除空行、注释、文档字符串；不计测试、迁移、工具、页面代码、依赖和自动生成代码。
-- 代码风格只对路由工厂共享局部变量数量和语句数量作局部豁免；ORM/Pydantic 数据类型允许无公开方法。其余 Pylint 规则照常检查。
+**`pytest` 和 `acceptance.py` 会重建测试库的 `public` schema，二者应依次运行。**测试连接须指向独立的 `campus_market_test` 数据库。
 
-真实结果保存在 `artifacts/`。原始运行记录可能含测试账号标识，但不包含认证凭据、密码哈希或完整用户私人留言。
-已由一位真实使用者试用注册、预约、确认、取消和发布商品流程，未报告问题；多位首次使用者的正式易用性试验尚未执行。浏览器结果仅适用于记录的本机版本，尚未取得实验一 REQ-025 所要求的甲方设备确认。
+- 集成测试覆盖权限、输入边界、状态转换、历史快照、幂等重试、并发竞争和事务回滚。
+- 性能验证使用端口 `8001`，按五批、每批 20 并发执行查询和无冲突预约，并检查十次正常服务重启后的数据。
+- 浏览器测试需要应用已在端口 `8000` 运行，使用 Windows 默认安装路径中的 Chrome 和 Edge；执行时会创建测试账号、商品和预约记录。
+- wheel 验证使用独立虚拟环境和端口 `8002`，检查安装后的健康接口、页面及静态资源。
+- 结构化结果保存在 `artifacts/`，JUnit 报告输出时自动移除主机名与项目绝对路径。
 
-## 构建与打包
+## 代码结构
 
-`uv build` 产生 wheel 和 sdist；`tools/verify_wheel.py` 在独立虚拟环境安装 wheel 后启动服务验证，排除仅源码可运行的错误。
-`tools/package_submission.py` 复制允许的源码/配置/证据，排除秘密、虚拟环境、数据库、Git 元数据和缓存；检查报告 PDF 与四组 UML 后生成同名 ZIP。
-LaTeX 工作区独立于源码；重新编译不会重写正文文件。报告源文件位于单独的 LaTeX 工作区。
-
-## Git 与本地材料
-
-GitHub 上传暂缓，审阅后再整合到既有仓库，保留远程旧内容和历史。
-不在仓库正文中保存课程实名、账户别名或其他可关联身份的信息。
-
-```powershell
-git status  # 查看当前文件修改及暂存状态
-git log --oneline --decorate  # 查看提交历史和分支指向
-git diff  # 查看未暂存的代码差异
-git show <commit>  # 查看指定提交的修改内容
-uv run python tools/check_public.py --history  # 检查受跟踪文件和可达历史的本机路径及排除项
+```text
+src/campus_market/
+  models.py               数据模型、外键和唯一约束
+  schemas.py              HTTP 输入类型
+  auth.py                 密码、登录会话和角色校验
+  product_commands.py     商品生命周期
+  governance.py           审核与违规处理
+  trade_commands.py       预约与成交
+  commands.py             事务、幂等回执和成功日志
+  queries.py              范围查询、历史与统计
+  repository.py           对象读取、行锁和结果投影
+  assets.py               图片校验、保存与授权访问
+  integrity.py            只读数据完整性检查
+  web.py                  HTTP 路由、CSRF 和异常映射
+  templates/              Jinja2 页面
+  static/                 CSS 与浏览器脚本
+migrations/               Alembic 迁移
+tests/                    PostgreSQL 集成测试
+tools/                    初始化、测试和构建工具
 ```
 
-原始控制台输出存放在被忽略的 `var/local-evidence/`，避免公开本机路径。
-测试结束时自动从 JUnit XML 移除 `hostname` 和项目绝对路径；结构化测试结果仍可用于核验。
-检查姓名、学号等额外关键词时，可通过 `--private-terms` 传入仓库外的本地词表；词表本身不要提交。
-真实使用者的账号、订单截图仅放在仓库外的报告工作区，不进入公开代码目录。
-`.env`、`var/`、数据库、虚拟环境、报告和课程实名提交包都不应加入公开 Git 仓库。
+应用采用模块化单体结构，业务命令统一提交事务。商品与预约按固定顺序加锁，部分唯一索引保证每件商品最多存在一条有效预约。内容版本和预约快照独立保留，商品后续修改不会覆盖历史内容及图片。
 
-## 初始化与打包命令说明
+金额使用精确数值类型；时间按 UTC 存储，日期筛选按北京时间的完整自然日处理。
 
-```powershell
-uv run python tools/configure_database.py  # 首次配置独立数据库和本地凭据；拒绝覆盖
-uv run campus-market admin  # 在控制台创建管理员，密码不回显
-uv run campus-market seed  # 载入虚构演示数据，重复执行不覆盖既有数据
-uv run campus-market db-stop  # 停止本项目的 PostgreSQL；请先停止应用和测试
-uv run python tools/sync_report_evidence.py  # 同步报告证据和演示截图，不改写正文
-uv run python tools/package_submission.py --help  # 查看报告、UML目录及提交名参数
-```
+## API
 
-打包时通过本地命令传入 `--name` 和 `--uml-directory`，不在脚本中硬编码个人信息。
-不要将含真实提交名或个人绝对路径的命令记录提交到公开仓库。
+运行后访问 [交互式 API 文档](http://127.0.0.1:8000/docs)。
 
-## 参考
-
-- FastAPI: <https://fastapi.tiangolo.com/>
-- SQLAlchemy: <https://docs.sqlalchemy.org/en/20/>
-- PostgreSQL 锁与事务: <https://www.postgresql.org/docs/17/explicit-locking.html>
-- PostgreSQL Windows 下载: <https://www.postgresql.org/download/windows/>
-- uv: <https://docs.astral.sh/uv/>
-- Pylint: <https://pylint.readthedocs.io/>
+- 登录身份来自服务端会话，受保护操作校验角色与对象归属。
+- 写请求携带 `X-CSRF-Token`，先访问任一页面取得 `campus_csrf` Cookie，并使用其值；登录后该值会轮换。
+- 业务变更请求另带 UUID 格式的 `Idempotency-Key` 和页面所见版本；审核操作还需当前审核批次。
+- 请求结果未知时，复用原请求内容和操作标识重试；下一次独立业务操作使用新标识。
+- 私人留言仅在授权详情中返回，管理员读取前须提交核查场景和原因。
