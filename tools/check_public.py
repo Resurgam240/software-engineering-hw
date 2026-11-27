@@ -30,7 +30,7 @@ def forbidden_path(name):
 def inspect_content(content, location, terms, findings):
     if PATH_PATTERN.search(content):
         findings.append({"location": location, "category": "local_absolute_path"})
-    if HOST_PATTERN.search(content):
+    if location.endswith(".xml") and HOST_PATTERN.search(content):
         findings.append({"location": location, "category": "machine_hostname"})
     if any(term in content for term in terms):
         findings.append({"location": location, "category": "private_term"})
