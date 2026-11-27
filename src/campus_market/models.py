@@ -97,7 +97,8 @@ class VersionImage(Base):
 
     __tablename__ = "product_version_images"
     __table_args__ = (
-        ForeignKeyConstraint(["product_id", "version"], ["product_versions.product_id", "product_versions.version"]),
+        ForeignKeyConstraint(["product_id", "version"],
+                             ["product_versions.product_id", "product_versions.version"]),
         UniqueConstraint("product_id", "version", "image_id"),
         CheckConstraint("position BETWEEN 1 AND 3"),
     )
@@ -112,7 +113,8 @@ class ReviewBatch(Base):
 
     __tablename__ = "review_batches"
     __table_args__ = (
-        ForeignKeyConstraint(["product_id", "content_version"], ["product_versions.product_id", "product_versions.version"]),
+        ForeignKeyConstraint(["product_id", "content_version"],
+                             ["product_versions.product_id", "product_versions.version"]),
         CheckConstraint("status IN ('PENDING','WITHDRAWN','APPROVED','REJECTED')"),
         Index("uq_pending_review", "product_id", unique=True, postgresql_where=text("status = 'PENDING'")),
     )
@@ -157,7 +159,8 @@ class ReservationSnapshot(Base):
 
     __tablename__ = "reservation_snapshots"
     __table_args__ = (
-        ForeignKeyConstraint(["product_id", "content_version"], ["product_versions.product_id", "product_versions.version"]),
+        ForeignKeyConstraint(["product_id", "content_version"],
+                             ["product_versions.product_id", "product_versions.version"]),
     )
     reservation_id: Mapped[str] = mapped_column(ForeignKey("reservations.id"), primary_key=True)
     product_id: Mapped[str] = mapped_column(Uuid(as_uuid=False))
@@ -173,7 +176,9 @@ class SnapshotImage(Base):
     """Historical image references share immutable assets with public versions."""
 
     __tablename__ = "snapshot_images"
-    reservation_id: Mapped[str] = mapped_column(ForeignKey("reservation_snapshots.reservation_id"), primary_key=True)
+    reservation_id: Mapped[str] = mapped_column(
+        ForeignKey("reservation_snapshots.reservation_id"), primary_key=True
+    )
     position: Mapped[int] = mapped_column(Integer, primary_key=True)
     image_id: Mapped[str] = mapped_column(ForeignKey("image_assets.id"))
 
