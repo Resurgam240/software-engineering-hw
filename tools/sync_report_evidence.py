@@ -53,7 +53,8 @@ def main():
         ("独立wheel安装与运行", "通过" if wheel["passed"] else "未通过"),
         ("Chrome", next(b["version"] for b in browsers if b["browser"] == "Chrome") + "，核心流程通过"),
         ("Edge", next(b["version"] for b in browsers if b["browser"] == "Edge") + "，核心流程通过"),
-        ("真人易用性 / 人工逐行审阅", "未执行 / 待本人完成"),
+        ("本人真实试用", "新账号预约、卖家确认、买家取消及发布保温杯，未报告问题"),
+        ("多位首次使用者试验 / 逐行审阅", "未执行 / 待本人完成"),
         ("GitHub远程上传", "按用户要求暂缓，待本人审阅后执行"),
     ]
     result_text = (r"\begin{table}[H]\centering\small" + "\n" +

@@ -1,16 +1,16 @@
 # 拾光集市：校园二手交易系统
 
-软件工程实验三，STUDENT_ID developer。Python 3.13 + FastAPI + PostgreSQL 17；桌面浏览器界面。
+软件工程实验三。Python 3.13 + FastAPI + PostgreSQL 17；桌面浏览器界面。
 
 ## 本机快速启动
 
 在本目录打开 PowerShell：
 
 ```powershell
-uv sync --frozen
-uv run campus-market db-start
-uv run campus-market init
-uv run campus-market serve
+uv sync --frozen  # 按锁文件安装项目依赖
+uv run campus-market db-start  # 启动本项目的本地 PostgreSQL
+uv run campus-market init  # 执行数据库迁移，保留既有数据
+uv run campus-market serve  # 启动本地 Web 服务，默认端口 8000
 ```
 
 访问 <http://127.0.0.1:8000>。服务停止用运行终端中的 Ctrl+C；不再使用数据库时执行 `uv run campus-market db-stop`。
@@ -24,12 +24,12 @@ Python 虚拟环境位于本目录 `.venv`，可以删除后按锁文件重建�
 
 仅用于本机课程演示，共同密码为 `CampusDemo2026!`：
 
-| 用户名 | 角色 |
-|---|---|
-| admin_demo | 管理员 |
+| 用户名      | 角色                       |
+| ----------- | -------------------------- |
+| admin_demo  | 管理员                     |
 | seller_demo | 普通用户，含商品和卖家记录 |
-| buyer_demo | 普通用户，含预约记录 |
-| buyer_two | 普通用户，用于预约另一商品 |
+| buyer_demo  | 普通用户，含预约记录       |
+| buyer_two   | 普通用户，用于预约另一商品 |
 
 `uv run campus-market seed` 初始化演示账号和商品；重复执行不重建既有商品，也不覆盖既有账号密码。
 这是明确的虚构演示数据。不要把演示配置用于公网部署。创建个人管理员可执行 `uv run campus-market admin`，控制台隐藏密码输入。
@@ -68,14 +68,14 @@ API 文档在运行服务的 `/docs`。写接口需先访问一个页面取得 C
 ## 质量与复现命令
 
 ```powershell
-uv run pylint src/campus_market
-uv run pytest --junitxml=artifacts/pytest.xml
-uv run python tools/line_count.py
-uv run python tools/acceptance.py
-uv run python tools/browser_smoke.py
-uv build
-uv run python tools/verify_wheel.py
-uv run campus-market verify
+uv run pylint src/campus_market  # 检查生产 Python 代码风格
+uv run pytest --junitxml=artifacts/pytest.xml  # 执行测试并保存报告（重建测试库）
+uv run python tools/line_count.py  # 统计有效生产 Python 代码行数
+uv run python tools/acceptance.py  # 验证重启与性能（重建测试库）
+uv run python tools/browser_smoke.py  # 使用 Chrome 和 Edge 验证完整业务流程
+uv build  # 构建 wheel 和源码发行包
+uv run python tools/verify_wheel.py  # 在独立环境安装 wheel 并验证启动
+uv run campus-market verify  # 只读检查业务数据关联与图片完整性
 ```
 
 - **pytest 和 acceptance 会重建 `campus_market_test` 的 public schema。**数据库名带精确保护，不得配置成开发库；两项测试应依次运行，不要并行重建同一测试库。
@@ -86,21 +86,46 @@ uv run campus-market verify
 - 代码风格只对路由工厂共享局部变量数量和语句数量作局部豁免；ORM/Pydantic 数据类型允许无公开方法。其余 Pylint 规则照常检查。
 
 真实结果保存在 `artifacts/`。原始运行记录可能含测试账号标识，但不包含认证凭据、密码哈希或完整用户私人留言。
-首次使用者易用性实验需要真实人员，本轮未执行。浏览器结果仅适用于记录的本机版本，尚未取得实验一 REQ-025 所要求的甲方设备确认。
+已由一位真实使用者试用注册、预约、确认、取消和发布商品流程，未报告问题；多位首次使用者的正式易用性试验尚未执行。浏览器结果仅适用于记录的本机版本，尚未取得实验一 REQ-025 所要求的甲方设备确认。
 
 ## 构建与打包
 
 `uv build` 产生 wheel 和 sdist；`tools/verify_wheel.py` 在独立虚拟环境安装 wheel 后启动服务验证，排除仅源码可运行的错误。
 `tools/package_submission.py` 复制允许的源码/配置/证据，排除秘密、虚拟环境、数据库、Git 元数据和缓存；检查报告 PDF 与四组 UML 后生成同名 ZIP。
-LaTeX 工作区独立于源码；重新编译不会重写正文文件。报告写作边界及人工待办见同级报告工作区 README。
+LaTeX 工作区独立于源码；重新编译不会重写正文文件。报告源文件位于单独的 LaTeX 工作区。
 
-## Git 与人工审阅
+## Git 与本地材料
 
-请逐行阅读将要使用的代码，实际修改后再提交，随后将本项目整合至 `<repository>`；不要覆盖远程旧内容或强制推送。
-本机交付包外额外保存 Git bundle，包含源码历史，可用 `git clone <bundle路径> <新目录>` 还原。
+GitHub 上传暂缓，审阅后再整合到既有仓库，保留远程旧内容和历史。
+提交作者使用公开账户别名，不在仓库中保存课程实名信息。
 
-远程上传完成后，由本人记录仓库地址、分支、提交哈希及网页截图，并补写报告相关章节。
-不自动操作课程平台。
+```powershell
+git status  # 查看当前文件修改及暂存状态
+git log --oneline --decorate  # 查看提交历史和分支指向
+git diff  # 查看未暂存的代码差异
+git show <commit>  # 查看指定提交的修改内容
+uv run python tools/check_public.py --history  # 检查受跟踪文件和可达历史的本机路径及排除项
+```
+
+原始控制台输出存放在被忽略的 `var/local-evidence/`，避免公开本机路径。
+发布版测试 XML 应移除 `hostname`；结构化测试结果仍可用于核验。
+检查姓名、学号等额外关键词时，可通过 `--private-terms` 传入仓库外的本地词表；词表本身不要提交。
+真实使用者的账号、订单截图仅放在仓库外的报告工作区，不进入公开代码目录。
+`.env`、`var/`、数据库、虚拟环境、报告和课程实名提交包都不应加入公开 Git 仓库。
+
+## 初始化与打包命令说明
+
+```powershell
+uv run python tools/configure_database.py  # 首次配置独立数据库和本地凭据；拒绝覆盖
+uv run campus-market admin  # 在控制台创建管理员，密码不回显
+uv run campus-market seed  # 载入虚构演示数据，重复执行不覆盖既有数据
+uv run campus-market db-stop  # 停止本项目的 PostgreSQL；请先停止应用和测试
+uv run python tools/sync_report_evidence.py  # 同步报告证据和演示截图，不改写正文
+uv run python tools/package_submission.py --help  # 查看报告、UML目录及提交名参数
+```
+
+打包时通过本地命令传入 `--name` 和 `--uml-directory`，不在脚本中硬编码个人信息。
+不要将含真实提交名或个人绝对路径的命令记录提交到公开仓库。
 
 ## 参考
 
