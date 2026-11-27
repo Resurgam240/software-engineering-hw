@@ -1,0 +1,33 @@
+{
+  "passed": true,
+  "wheel": "campus_market-1.0.0-py3-none-any.whl",
+  "isolated_installation": true,
+  "checks": [
+    {
+      "path": "/health",
+      "status": 200,
+      "bytes": 15
+    },
+    {
+      "path": "/market",
+      "status": 200,
+      "bytes": 2824
+    },
+    {
+      "path": "/static/app.css",
+      "status": 200,
+      "bytes": 8129
+    },
+    {
+      "path": "/static/app.js",
+      "status": 200,
+      "bytes": 28329
+    },
+    {
+      "path": "/api/products",
+      "status": 200,
+      "bytes": 1904
+    }
+  ],
+  "note": "服务从独立wheel虚拟环境启动，工作目录不含源码。"
+}

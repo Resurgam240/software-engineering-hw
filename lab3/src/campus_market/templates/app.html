@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="校园闲置物品发布、审核、预约与线下交易记录">
+  <title>拾光集市 · 校园二手交易</title>
+  <link rel="stylesheet" href="/static/app.css">
+  <script src="/static/app.js" defer></script>
+</head>
+<body data-role="{{ actor.role if actor else 'GUEST' }}" data-user-id="{{ actor.id if actor else '' }}">
+  <aside class="sidebar">
+    <a class="brand" href="/market"><span class="brand-icon">拾</span><span>拾光集市<small>CAMPUS MARKET</small></span></a>
+    <p class="nav-caption">校园闲置 · 让好物继续</p>
+    <nav aria-label="主导航">
+      <a href="/market">▦ <span>商品集市</span></a>
+      {% if actor and actor.role == 'USER' %}
+      <a href="/my-products">▤ <span>我的商品</span></a>
+      <a href="/my-reservations">◷ <span>我的预约</span></a>
+      <a href="/seller-reservations">☷ <span>卖家工作台</span></a>
+      {% endif %}
+      {% if actor and actor.role == 'ADMIN' %}
+      <a href="/admin">▣ <span>商品审核与治理</span></a>
+      <a href="/my-reservations">◷ <span>预约核查</span></a>
+      {% endif %}
+      {% if actor %}
+      <a href="/statistics">▥ <span>{{ '平台' if actor.role == 'ADMIN' else '我的' }}成交统计</span></a>
+      <a href="/history">≡ <span>{{ '审计日志' if actor.role == 'ADMIN' else '操作历史' }}</span></a>
+      {% endif %}
+    </nav>
+    <div class="sidebar-bottom"><span class="status-dot"></span> 课程实验 · 本地演示版<br><small>不提供在线付款与校园身份认证</small></div>
+  </aside>
+  <div class="workspace">
+    <header class="topbar">
+      <span>软件工程 / 实验三 <span class="separator">/</span> <strong>校园二手交易系统</strong></span>
+      <div class="account">
+        {% if actor %}<span class="avatar">{{ (actor.nickname or actor.username)[0] }}</span>
+        <span>{{ actor.nickname or actor.username }}<small>{{ '管理员' if actor.role == 'ADMIN' else '普通用户' }}</small></span>
+        <button class="text-button" id="logout">退出</button>
+        {% else %}<span>访客浏览</span><a class="button small" href="/login">登录 / 注册</a>{% endif %}
+      </div>
+    </header>
+    <main id="main" tabindex="-1">
+      <div id="page-heading"></div>
+      <div id="feedback" role="status" aria-live="polite" hidden></div>
+      <section id="content" aria-label="页面内容"><p class="muted">正在读取数据…</p></section>
+    </main>
+    <footer>拾光集市 · 单件闲置交易记录 <span>线下议价与交付由双方协商，平台未核验实际付款。</span></footer>
+  </div>
+  <dialog id="modal"><div class="dialog-head"><h2 id="modal-title"></h2><button id="modal-close" class="text-button" aria-label="关闭">×</button></div><div id="modal-body"></div></dialog>
+  <template id="category-options">{% for item in categories %}<option>{{ item }}</option>{% endfor %}</template>
+  <template id="condition-options">{% for item in conditions %}<option>{{ item }}</option>{% endfor %}</template>
+  <template id="status-options">{% for value,label in labels.items() %}<option value="{{ value }}">{{ label }}</option>{% endfor %}</template>
+</body>
+</html>

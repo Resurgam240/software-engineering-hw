@@ -1,0 +1,12 @@
+{
+  "ok": true,
+  "counts": {
+    "users": 10,
+    "products": 14,
+    "reservations": 14,
+    "versions": 14,
+    "images": 0
+  },
+  "problems": [],
+  "policy": "只诊断，不修改数据；异常由开发或维护人员受控处理。"
+}

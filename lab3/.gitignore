@@ -1,0 +1,14 @@
+.venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.env
+var/
+dist/
+*.egg-info/
+.coverage
+artifacts/screenshots/
+artifacts/browser-profile/
+artifacts/*.log
+artifacts/*.txt
+!artifacts/pylint.txt
