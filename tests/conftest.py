@@ -2,7 +2,9 @@
 
 from dataclasses import replace
 import os
+from pathlib import Path
 from uuid import uuid4
+import xml.etree.ElementTree as ET
 
 from alembic import command
 from alembic.config import Config
@@ -15,6 +17,23 @@ from campus_market.config import Settings
 from campus_market.db import Database
 from campus_market.models import User
 from campus_market.queries import QueryService
+
+
+@pytest.hookimpl(wrapper=True, tryfirst=True)
+def pytest_sessionfinish(session, exitstatus):
+    """Do not publish machine names or checkout paths through generated JUnit XML."""
+    del exitstatus
+    result = yield
+    filename = getattr(session.config.option, "xmlpath", None)
+    if filename and Path(filename).is_file():
+        report = ET.parse(filename)
+        root = str(Path(__file__).resolve().parents[1])
+        for element in report.iter():
+            element.attrib.pop("hostname", None)
+            if element.text:
+                element.text = element.text.replace(root, "<project>").replace(root.replace("\\", "/"), "<project>")
+        report.write(filename, encoding="utf-8", xml_declaration=True)
+    return result
 
 
 @pytest.fixture(scope="session")
