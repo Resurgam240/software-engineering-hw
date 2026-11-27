@@ -1,0 +1,109 @@
+{
+  "method": "token-bearing physical Python lines, excluding blanks, comments and docstrings",
+  "scope": "src/campus_market/*.py only; no tests, migrations, tools, HTML/CSS/JS, dependencies",
+  "files": [
+    {
+      "file": "src/campus_market/__init__.py",
+      "physical": 1,
+      "effective": 0
+    },
+    {
+      "file": "src/campus_market/assets.py",
+      "physical": 76,
+      "effective": 64
+    },
+    {
+      "file": "src/campus_market/auth.py",
+      "physical": 117,
+      "effective": 85
+    },
+    {
+      "file": "src/campus_market/cli.py",
+      "physical": 97,
+      "effective": 79
+    },
+    {
+      "file": "src/campus_market/commands.py",
+      "physical": 106,
+      "effective": 89
+    },
+    {
+      "file": "src/campus_market/config.py",
+      "physical": 37,
+      "effective": 28
+    },
+    {
+      "file": "src/campus_market/constants.py",
+      "physical": 38,
+      "effective": 26
+    },
+    {
+      "file": "src/campus_market/db.py",
+      "physical": 21,
+      "effective": 12
+    },
+    {
+      "file": "src/campus_market/errors.py",
+      "physical": 22,
+      "effective": 12
+    },
+    {
+      "file": "src/campus_market/governance.py",
+      "physical": 77,
+      "effective": 67
+    },
+    {
+      "file": "src/campus_market/integrity.py",
+      "physical": 101,
+      "effective": 85
+    },
+    {
+      "file": "src/campus_market/models.py",
+      "physical": 238,
+      "effective": 170
+    },
+    {
+      "file": "src/campus_market/product_commands.py",
+      "physical": 116,
+      "effective": 86
+    },
+    {
+      "file": "src/campus_market/queries.py",
+      "physical": 264,
+      "effective": 232
+    },
+    {
+      "file": "src/campus_market/repository.py",
+      "physical": 120,
+      "effective": 96
+    },
+    {
+      "file": "src/campus_market/schemas.py",
+      "physical": 102,
+      "effective": 44
+    },
+    {
+      "file": "src/campus_market/seed.py",
+      "physical": 80,
+      "effective": 67
+    },
+    {
+      "file": "src/campus_market/trade_commands.py",
+      "physical": 111,
+      "effective": 90
+    },
+    {
+      "file": "src/campus_market/validation.py",
+      "physical": 82,
+      "effective": 61
+    },
+    {
+      "file": "src/campus_market/web.py",
+      "physical": 266,
+      "effective": 217
+    }
+  ],
+  "physical": 2072,
+  "effective": 1610,
+  "over_1500": true
+}

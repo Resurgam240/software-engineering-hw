@@ -13,6 +13,7 @@ from sqlalchemy import select
 from campus_market.auth import AuthService
 from campus_market.config import Settings
 from campus_market.db import Database
+from campus_market.integrity import IntegrityInspector
 from campus_market.models import User
 from campus_market.seed import seed_demo
 
@@ -63,7 +64,7 @@ def postgres_action(action: str):
 def main():
     """CLI is installed as campus-market by editable and wheel installations."""
     parser = argparse.ArgumentParser(description="校园二手交易系统开发与运行工具")
-    parser.add_argument("action", choices=("init", "admin", "seed", "serve", "db-start", "db-stop"))
+    parser.add_argument("action", choices=("init", "admin", "seed", "serve", "verify", "db-start", "db-stop"))
     parser.add_argument("--port", type=int, default=8000)
     args = parser.parse_args()
     if args.action.startswith("db-"):
@@ -83,6 +84,11 @@ def main():
             create_admin(database)
         elif args.action == "seed":
             print(json.dumps(seed_demo(database, settings), ensure_ascii=False, default=str, indent=2))
+        elif args.action == "verify":
+            result = IntegrityInspector(database, settings.asset_dir).inspect()
+            print(json.dumps(result, ensure_ascii=False, indent=2))
+            if not result["ok"]:
+                raise SystemExit(1)
     finally:
         database.close()
 

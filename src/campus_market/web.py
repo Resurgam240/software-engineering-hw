@@ -157,6 +157,10 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     def product(product_id: UUID, actor=Depends(identity)):
         return queries.product(actor, str(product_id))
 
+    @app.get("/api/products/{product_id}/history")
+    def product_history(product_id: UUID, actor=Depends(identity)):
+        return queries.product_history(actor, str(product_id))
+
     @app.post("/api/products", status_code=201)
     def create_product(data: schemas.ContentInput, request: Request, actor=Depends(write_identity)):
         return commands.execute(actor, "product.create", key(request), data.model_dump())
@@ -222,6 +226,10 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     @app.get("/api/history")
     def history(request: Request, actor=Depends(identity)):
         return queries.history(actor, dict(request.query_params))
+
+    @app.get("/api/admin/private-access-logs")
+    def private_access_history(request: Request, actor=Depends(identity)):
+        return queries.private_access_history(actor, dict(request.query_params))
 
     @app.post("/api/admin/reservations/{reservation_id}/private-message-access")
     def private_message(reservation_id: UUID, data: schemas.PrivateAccessInput,

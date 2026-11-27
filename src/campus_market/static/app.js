@@ -4,7 +4,10 @@ const $ = (selector, root = document) => root.querySelector(selector);
 const esc = value => String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const user = {id: document.body.dataset.userId, role: document.body.dataset.role};
 const labels = Object.fromEntries([...$('#status-options').content.children].map(o => [o.value,o.textContent]));
-const badge = state => `<span class="badge ${esc(state)}">${esc(labels[state] || state)}</span>`;
+const badge = (state, kind='product') => {
+  const special=kind==='reservation'?{PENDING:'待确认',REJECTED:'已拒绝'}:{PENDING:'待审核',REJECTED:'审核驳回'};
+  return `<span class="badge ${esc(state)}">${esc(special[state] || labels[state] || state)}</span>`;
+};
 const categoryOptions = $('#category-options').innerHTML;
 const conditionOptions = $('#condition-options').innerHTML;
 const content = $('#content');
@@ -149,6 +152,16 @@ async function detailProduct(id) {
       await detailProduct(id);feedback('操作已保存',true);
     }catch(exc){feedback(exc.message);}
   });
+  if(owner||admin){
+    const button=document.createElement('button');button.className='secondary';button.textContent='版本与审核历史';
+    $('.actions',content).append(button);
+    button.onclick=async()=>{
+      try{
+        const history=await api(`/api/products/${id}/history`);
+        openModal('版本与审核历史',`<h3>内容版本</h3><div class="table-wrap"><table><thead><tr><th>版本</th><th>标题</th><th>价格</th></tr></thead><tbody>${history.versions.map(v=>`<tr><td>${v.version}</td><td>${esc(v.title)}</td><td>${esc(v.price||'未填写')}</td></tr>`).join('')}</tbody></table></div><h3>审核批次</h3>${history.reviews.length?history.reviews.map(r=>`<p class="help">${dateText(r.created_at)} · 版本 ${r.content_version} · ${esc(labels[r.status]||r.status)}<br>${esc(r.reason)}</p>`).join(''):'<p class="help">尚未提交审核。</p>'}`);
+      }catch(exc){feedback(exc.message);}
+    };
+  }
 }
 async function listReservations(seller=false) {
   title(user.role==='ADMIN'?'预约核查':seller?'卖家工作台':'我的预约','查看预约进度与历史快照，私人留言仅在授权详情中展示。');
@@ -156,7 +169,7 @@ async function listReservations(seller=false) {
   activeLoader=async()=>{
     const params=new URLSearchParams(new FormData($('#filters')));params.set('scope',seller?'seller':'buyer');params.set('page',currentPage);
     const result=await api('/api/reservations?'+params);
-    $('#results').innerHTML=result.items.length?`<div class="panel table-wrap"><table><thead><tr><th>预约商品</th><th>预约时标价</th><th>状态</th><th>创建时间</th><th>操作</th></tr></thead><tbody>${result.items.map(r=>`<tr><td>${esc(r.snapshot.title)}<br><small>${esc(r.snapshot.category)}</small></td><td>¥ ${r.snapshot.price}</td><td>${badge(r.status)}</td><td>${dateText(r.created_at)}</td><td><a href="/reservation/${r.id}">查看详情 →</a></td></tr>`).join('')}</tbody></table></div>`+pager(result.total):empty();bindPager();
+    $('#results').innerHTML=result.items.length?`<div class="panel table-wrap"><table><thead><tr><th>预约商品</th><th>预约时标价</th><th>状态</th><th>创建时间</th><th>操作</th></tr></thead><tbody>${result.items.map(r=>`<tr><td>${esc(r.snapshot.title)}<br><small>${esc(r.snapshot.category)}</small></td><td>¥ ${r.snapshot.price}</td><td>${badge(r.status,'reservation')}</td><td>${dateText(r.created_at)}</td><td><a href="/reservation/${r.id}">查看详情 →</a></td></tr>`).join('')}</tbody></table></div>`+pager(result.total):empty();bindPager();
   };formHandler($('#filters'),async()=>{currentPage=1;await activeLoader();});await activeLoader();
 }
 async function detailReservation(id) {
@@ -167,7 +180,7 @@ async function detailReservation(id) {
   if(seller&&r.status==='PENDING')actions.push(['confirm','确认预约'],['reject','拒绝预约']);
   if(seller&&r.status==='CONFIRMED')actions.push(['complete','标记完成']);
   if((buyer&&['PENDING','CONFIRMED'].includes(r.status))||(seller&&r.status==='CONFIRMED'))actions.push(['cancel','取消预约']);
-  content.innerHTML=`<div class="panel">${badge(r.status)}<h2>${esc(s.title)}</h2><div class="metadata">${esc(s.category)} / ${esc(s.condition)} / 内容版本 ${s.content_version}</div><div class="detail-price">¥ ${s.price}</div><p>${esc(s.description)}</p><div class="image-row">${(s.image_ids||[]).map(i=>`<img src="/images/${i}" alt="预约快照图片">`).join('')}</div><p class="help">预约编号 ${id}<br>买家 ${r.buyer_id}<br>卖家 ${r.seller_id}<br>创建时间 ${dateText(r.created_at)}<br>完成时间 ${dateText(r.completed_at)}</p>${r.reason?`<div class="notice">处理原因：${esc(r.reason)}</div>`:''}<h3>预约留言</h3>${r.original_message!==undefined?`<div class="private-message">${esc(r.original_message)}</div>`:'<p class="help">管理员查看须选择核查场景、填写原因并成功保存访问记录。</p><button id="private-read" class="secondary">填写原因并查看留言</button><div id="private-output"></div>'}<div class="notice">${esc(r.notice)}</div><div class="actions">${actions.map(([a,l])=>`<button data-trade="${a}" class="${a==='cancel'||a==='reject'?'danger':''}">${l}</button>`).join('')}</div></div>`;
+  content.innerHTML=`<div class="panel">${badge(r.status,'reservation')}<h2>${esc(s.title)}</h2><div class="metadata">${esc(s.category)} / ${esc(s.condition)} / 内容版本 ${s.content_version}</div><div class="detail-price">¥ ${s.price}</div><p>${esc(s.description)}</p><div class="image-row">${(s.image_ids||[]).map(i=>`<img src="/images/${i}" alt="预约快照图片">`).join('')}</div><p class="help">预约编号 ${id}<br>买家 ${r.buyer_id}<br>卖家 ${r.seller_id}<br>创建时间 ${dateText(r.created_at)}<br>完成时间 ${dateText(r.completed_at)}</p>${r.reason?`<div class="notice">处理原因：${esc(r.reason)}</div>`:''}<h3>预约留言</h3>${r.original_message!==undefined?`<div class="private-message">${esc(r.original_message)}</div>`:'<p class="help">管理员查看须选择核查场景、填写原因并成功保存访问记录。</p><button id="private-read" class="secondary">填写原因并查看留言</button><div id="private-output"></div>'}<div class="notice">${esc(r.notice)}</div><div class="actions">${actions.map(([a,l])=>`<button data-trade="${a}" class="${a==='cancel'||a==='reject'?'danger':''}">${l}</button>`).join('')}</div></div>`;
   document.querySelectorAll('[data-trade]').forEach(button=>button.onclick=async()=>{
     const action=button.dataset.trade;
     const run=reason=>command(`/api/reservations/${id}/${action}`,{expected_row_version:r.product_row_version,expected_reservation_version:r.row_version,...(reason?{reason}:{})});
@@ -198,6 +211,22 @@ async function loginPage() {
   formHandler($('#login-form'),async data=>{await api('/auth/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)});location.href='/market';});
   formHandler($('#register-form'),async(data,form)=>{await api('/auth/register',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)});feedback('注册成功，请使用左侧表单登录。',true);$('#login-form').elements.username.value=data.username;form.reset();});
 }
+function attachPrivateAuditButton() {
+  if(user.role!=='ADMIN'||location.pathname!=='/history')return;
+  const button=document.createElement('button');button.className='secondary';button.textContent='留言访问留痕';
+  $('.heading-row').append(button);
+  button.onclick=()=>{
+    let page=1;
+    openModal('留言访问留痕',`<form id="access-filters" class="filters"><label>预约编号<input name="reservation_id"></label><label>管理员编号<input name="admin_id"></label><button type="submit">查询</button></form><div id="access-results"></div>`);
+    const load=async()=>{
+      const params=new URLSearchParams(new FormData($('#access-filters')));params.set('page',page);
+      const result=await api('/api/admin/private-access-logs?'+params);
+      $('#access-results').innerHTML=result.items.length?result.items.map(r=>`<div class="notice">${dateText(r.created_at)} · ${r.purpose==='VIOLATION'?'违规核查':'状态异常排查'}<br>管理员：<code>${r.admin_id}</code><br>预约：<code>${r.reservation_id}</code><br>原因：${esc(r.reason)}</div>`).join(''):'<p class="help">没有符合条件的访问记录。</p>';
+      if(result.total>20){const next=document.createElement('button');next.className='secondary small';next.textContent=page*20<result.total?'下一页':'返回第一页';next.onclick=async()=>{page=page*20<result.total?page+1:1;await load();};$('#access-results').append(next);}
+    };
+    formHandler($('#access-filters'),async()=>{page=1;await load();});load().catch(error=>feedback(error.message));
+  };
+}
 async function route() {
   const path=location.pathname;
   document.querySelectorAll('nav a').forEach(a=>a.classList.toggle('active',a.pathname===path||(path==='/'&&a.pathname==='/market')));
@@ -215,4 +244,4 @@ async function route() {
 }
 $('#modal-close').onclick=()=>modal.close();
 if($('#logout'))$('#logout').onclick=async()=>{try{await api('/auth/logout',{method:'POST'});location.href='/market';}catch(exc){feedback(exc.message);}};
-route().catch(error=>{content.innerHTML=empty();feedback(error.message);});
+route().then(attachPrivateAuditButton).catch(error=>{content.innerHTML=empty();feedback(error.message);});

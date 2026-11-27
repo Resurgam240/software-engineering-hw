@@ -2,13 +2,13 @@
 
 from datetime import date, datetime, time, timedelta, timezone
 
-from sqlalchemy import func, or_, select
+from sqlalchemy import String, cast, func, or_, select
 
 from campus_market.auth import require_role, require_user
 from campus_market.errors import DomainError, require
 from campus_market.models import (
     OperationLog, PrivateAccessLog, Product, ProductVersion, Reservation,
-    ReservationSnapshot, ViolationRecord,
+    ReservationSnapshot, ReviewBatch, ViolationRecord,
 )
 from campus_market.repository import can_see_product, product_view, reservation_view
 from campus_market.validation import identifier, money, reason_text
@@ -163,7 +163,18 @@ class QueryService:
         page, offset = pagination(query)
         statement = select(OperationLog)
         if actor.role != "ADMIN":
-            statement = statement.where(OperationLog.actor_id == actor.id)
+            own_products = select(cast(Product.id, String)).where(Product.seller_id == actor.id)
+            own_reservations = select(cast(Reservation.id, String)).where(
+                (Reservation.buyer_id == actor.id) | (Reservation.seller_id == actor.id)
+            )
+            related_success = (OperationLog.result == "SUCCESS") & (
+                ((OperationLog.target_type == "product") &
+                 OperationLog.target_id.in_(own_products))
+                | ((OperationLog.target_type == "reservation") &
+                   OperationLog.target_id.in_(own_reservations))
+            )
+            statement = statement.where((OperationLog.actor_id == actor.id) | related_success)
+            statement = statement.where(OperationLog.action != "private-message-access")
         elif query.get("actor_id"):
             statement = statement.where(OperationLog.actor_id == identifier(query["actor_id"]))
         if query.get("target_id"):
@@ -186,6 +197,53 @@ class QueryService:
                          if actor.role == "ADMIN" else {})}
                      for row in rows]
             return {"items": items, "total": total, "page": page}
+
+    def product_history(self, actor, product_id: str) -> dict:
+        """Owners and administrators can inspect retained versions and review batches."""
+        actor = require_user(actor)
+        product_id = identifier(product_id)
+        with self.database.sessions() as session:
+            product = session.get(Product, product_id)
+            require(product is not None and (product.seller_id == actor.id or
+                    (actor.role == "ADMIN" and product.status != "DRAFT")),
+                    "NOT_FOUND", "对象不存在或不可访问", 404)
+            versions = session.scalars(select(ProductVersion).where(
+                ProductVersion.product_id == product_id).order_by(ProductVersion.version.desc()))
+            batches = session.scalars(select(ReviewBatch).where(
+                ReviewBatch.product_id == product_id).order_by(ReviewBatch.created_at.desc()))
+            return {
+                "product_id": product_id,
+                "versions": [{"version": row.version, "title": row.title, "category": row.category,
+                              "condition": row.condition, "price": str(row.price) if row.price else None,
+                              "description": row.description} for row in versions],
+                "reviews": [{"id": row.id, "content_version": row.content_version, "status": row.status,
+                             "reason": row.reason, "created_at": row.created_at} for row in batches],
+            }
+
+    def private_access_history(self, actor, query: dict) -> dict:
+        """Administrative access records are searchable without copying message bodies."""
+        require_role(actor, "ADMIN")
+        page, offset = pagination(query)
+        statement = select(PrivateAccessLog)
+        if query.get("reservation_id"):
+            statement = statement.where(PrivateAccessLog.reservation_id == identifier(query["reservation_id"]))
+        if query.get("admin_id"):
+            statement = statement.where(PrivateAccessLog.admin_id == identifier(query["admin_id"]))
+        lower, upper = date_bounds(query)
+        if lower:
+            statement = statement.where(PrivateAccessLog.created_at >= lower)
+        if upper:
+            statement = statement.where(PrivateAccessLog.created_at < upper)
+        with self.database.sessions() as session:
+            total = session.scalar(select(func.count()).select_from(statement.subquery()))
+            rows = session.scalars(statement.order_by(PrivateAccessLog.created_at.desc(),
+                                                      PrivateAccessLog.id)
+                                   .offset(offset).limit(20))
+            return {"page": page, "total": total, "items": [
+                {"id": row.id, "admin_id": row.admin_id, "reservation_id": row.reservation_id,
+                 "purpose": row.purpose, "reason": row.reason, "created_at": row.created_at}
+                for row in rows
+            ]}
 
     def private_message(self, actor, reservation_id: str, purpose: str, reason: str, *, fail=False) -> dict:
         """Never return private content before its access record has committed."""

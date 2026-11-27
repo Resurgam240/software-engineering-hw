@@ -1,0 +1,48 @@
+[
+  {
+    "browser": "Chrome",
+    "version": "157.0.8103.80",
+    "viewport": "1366x768",
+    "passed": true,
+    "scenarios": [
+      "register",
+      "login",
+      "draft",
+      "submit",
+      "approve",
+      "search",
+      "reserve",
+      "confirm",
+      "cancel",
+      "reserve-again",
+      "complete",
+      "statistics",
+      "private-audit"
+    ],
+    "horizontal_overflow": false,
+    "javascript_errors": []
+  },
+  {
+    "browser": "Edge",
+    "version": "158.0.4370.45",
+    "viewport": "1366x768",
+    "passed": true,
+    "scenarios": [
+      "register",
+      "login",
+      "draft",
+      "submit",
+      "approve",
+      "search",
+      "reserve",
+      "confirm",
+      "cancel",
+      "reserve-again",
+      "complete",
+      "statistics",
+      "private-audit"
+    ],
+    "horizontal_overflow": false,
+    "javascript_errors": []
+  }
+]
