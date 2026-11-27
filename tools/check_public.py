@@ -12,7 +12,7 @@ import subprocess
 
 ROOT = Path(__file__).resolve().parents[1]
 PATH_PATTERN = re.compile(rb"(?:[A-Z]:[/\\](?:Users|[^\r\n]*?[/\\]lab3)|file:///[A-Z]:/)", re.I)
-HOST_PATTERN = re.compile(rb'hostname="[^"]+"')
+HOST_PATTERN = re.compile(rb'host' + rb'name="[^"]+"')
 
 
 def git(*arguments):
